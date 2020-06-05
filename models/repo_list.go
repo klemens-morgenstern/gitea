@@ -202,6 +202,26 @@ const (
 	SearchOrderByForksReverse          SearchOrderBy = "num_forks DESC"
 )
 
+func (s SearchOrderBy) Reverse() SearchOrderBy {
+	switch s {
+		case SearchOrderByAlphabetically: 		 return SearchOrderByAlphabeticallyReverse
+		case SearchOrderByAlphabeticallyReverse: return SearchOrderByAlphabetically
+		case SearchOrderByLeastUpdated: 		 return SearchOrderByRecentUpdated
+		case SearchOrderByRecentUpdated: 		 return SearchOrderByLeastUpdated
+		case SearchOrderByOldest: 				 return SearchOrderByNewest
+		case SearchOrderByNewest: 				 return SearchOrderByOldest
+		case SearchOrderBySize: 				 return SearchOrderBySizeReverse
+		case SearchOrderBySizeReverse: 			 return SearchOrderBySize
+		case SearchOrderByID: 					 return SearchOrderByIDReverse
+		case SearchOrderByIDReverse: 			 return SearchOrderByID
+		case SearchOrderByStars: 				 return SearchOrderByStarsReverse
+		case SearchOrderByStarsReverse: 		 return SearchOrderByStars
+		case SearchOrderByForks: 				 return SearchOrderByForksReverse
+		case SearchOrderByForksReverse: 		 return SearchOrderByForks
+	default:
+		return s
+	}
+}
 // SearchRepositoryCondition creates a query condition according search repository options
 func SearchRepositoryCondition(opts *SearchRepoOptions) builder.Cond {
 	var cond = builder.NewCond()
@@ -468,3 +488,4 @@ func FindUserAccessibleRepoIDs(user *User) ([]int64, error) {
 	}
 	return repoIDs, nil
 }
+

@@ -1,0 +1,3218 @@
+"The `Upload` scalar type represents a multipart file upload."
+scalar Upload
+
+
+scalar Cursor
+scalar DateTime
+
+interface Node @key(fields: "id") {
+    id: ID!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+type Query
+{
+    id: ID!
+    node(id: ID!): Node
+}
+
+type Mutation
+{
+    id: ID!
+}
+
+
+extend type Query
+{
+    defaultSigningKey: String!
+    version: String!
+}
+
+"""MarkdownOption markdown options"""
+input MarkdownOptionInput {
+    """
+    Context to render
+
+    in: body
+    """
+    Context: String
+
+    """
+    Mode to render
+
+    in: body
+    """
+    Mode: String
+
+    """
+    Text markdown to render
+
+    in: body
+    """
+    Text: String
+
+    """
+    Is it a wiki page ?
+
+    in: body
+    """
+    Wiki: Boolean
+}
+
+
+extend type Mutation
+{
+    renderMarkdown(body: MarkdownOptionInput): String!
+    renderMarkdownRaw(body: String!): String!
+}
+
+
+"""User represents an owner"""
+interface Owner implements Node @key(fields: "id") @key(fields: "login")  {
+    avatarUrl: String
+    fullName: String!
+    id: ID!
+    login: String!
+    language: String
+}
+
+enum OwnerOrderBy {
+    """Order alphabetically, ascending"""
+    NAME_ASC
+    """Order alphabetically, descending"""
+    NAME_DESC
+    """Order by when updated, ascending"""
+    UPDATED_ASC
+    """Order by when updated, descending"""
+    UPDATED_DESC
+    """Order by when created, ascending"""
+    CREATED_ASC
+    """Order by when created, descending"""
+    CREATED_DESC
+    """Order by internal representation, ascending"""
+    INTERNAL_ASC
+    """Order by internal representation, descending"""
+    INTERNAL_DESC
+}
+
+type OwnerConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [OwnerEdge!]!
+}
+
+type OwnerEdge {
+    cursor: Cursor!
+    node: Owner!
+}
+
+extend type Query {
+    owners(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: String
+        orderBy: OwnerOrderBy
+    ): OwnerEdge
+
+    owner(login: String!) : Owner
+}
+
+"""Organization represents an organization"""
+type Organization implements Node & Owner {
+    avatarUrl: String
+    description: String
+    fullName: String!
+    id: ID!
+    location: String
+    repoAdminChangeTeamAccess: Boolean!
+    login: String!
+    visibility: Visibility!
+    website: String
+    """User locale"""
+    language: String
+}
+
+enum Visibility { PUBLIC LIMITED PRIVATE}
+enum State {OPEN CLOSED}
+
+type OrganizationConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [OrganizationEdge!]!
+}
+
+type OrganizationEdge {
+    cursor: Cursor!
+    node: Organization!
+}
+
+
+extend type Query {
+    organizations(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: String
+        orderBy: OwnerOrderBy
+    ): OrganizationEdge
+
+    organization(login: String!) : Organization
+}
+
+"""CreateOrgOption options for creating an organization"""
+input CreateOrganizationInput {
+    description: String
+    fullName: String!
+    location: String
+    repoAdminChangeTeamAccess: Boolean
+    username: String!
+
+    """possible values are `public` (default), `limited` or `private`"""
+    visibility: Visibility
+    website: String
+}
+
+"""EditOrgOption options for editing an organization"""
+input UpdateOrganizationInput {
+    description: String
+    fullName: String
+    location: String
+    repoAdminChangeTeamAccess: Boolean
+
+    """possible values are `public`, `limited` or `private`"""
+    visibility: String
+    website: String
+}
+
+extend type Mutation {
+    createOrganization(input: CreateOrganizationInput!): Organization!
+    deleteOrganization(id: ID!): Organization!
+    updateOrganization(id: ID! input: UpdateOrganizationInput!): Organization!
+}
+
+
+"""User represents a user"""
+type User implements Node & Owner  {
+    """URL to the user's avatar"""
+    avatarUrl: String
+    created: String!
+    email: String!
+
+    """the user's full name"""
+    fullName: String!
+
+    """the user's id"""
+    id: ID!
+
+    """Is the user an administrator"""
+    isAdmin: Boolean!
+
+    """User locale"""
+    language: String
+    lastLogin: String
+
+    """the user's username"""
+    login: String!
+}
+
+type UserConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [UserEdge!]!
+}
+
+type UserEdge {
+    cursor: Cursor!
+    node: User!
+}
+
+extend type Query {
+    users(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: String
+        orderBy: OwnerOrderBy
+    ): UserConnection
+
+    user(login: String!) : User
+}
+
+extend type User {
+    organizations(
+        first: Int
+        last: Int
+        offset: Int
+        before: Int
+    ): OrganizationConnection
+}
+
+extend type Organization {
+    members(
+        first: Int
+        last: Int
+        offset: Int
+        before: Int
+    ): UserConnection
+
+    isMember(login: String!) : Boolean
+    publicMembers(
+        first: Int
+        last: Int
+        offset: Int
+        before: Int
+    ): UserConnection
+
+    isPublicMember(login: String!) : Boolean
+}
+
+extend type Mutation {
+    publicizeMember(organization: ID! user: ID!) : User!
+    concealMember  (organization: ID! user: ID!) : User!
+
+    removeMember(organization: ID! user: ID!): User!
+}
+
+"""Repository represents a repository"""
+type Repository implements Node @key(fields: "id") @key(fields: "name owner { id }") @key(fields: "name owner { login }") {
+    allowMergeCommits: Boolean!
+    allowRebase: Boolean!
+    allowRebaseExplicit: Boolean!
+    allowSquashMerge: Boolean!
+    archived: Boolean!
+    avatarUrl: String
+    cloneUrl: String!
+    createdAt: DateTime!
+    defaultBranch: Branch
+    description: String!
+    empty: Boolean
+
+    """ExternalTracker represents settings for external tracker"""
+    externalTracker: ExternalTracker
+
+    """ExternalWiki represents setting for external wiki"""
+    externalWiki: ExternalWiki
+    fork: Boolean!
+    forksCount: String!
+    fullName: String!
+    hasIssues: Boolean!
+    hasPullRequests: Boolean!
+    hasWiki: Boolean!
+    htmlUrl: String!
+    id: ID!
+    ignoreWhitespaceConflicts: Boolean!
+
+    """InternalTracker represents settings for internal tracker"""
+    internalTracker: InternalTracker
+    mirror: Boolean!
+    name: String!
+    openIssuesCount: String!
+    openPrCounter: String!
+    originalUrl: String
+
+    """User represents a user"""
+    owner: Owner!
+
+    """Permission represents a set of permissions"""
+    permissions: Permission!
+    private: Boolean!
+    releaseCounter: String!
+    size: String!
+    sshUrl: String
+    starsCount: String
+    template: Boolean!
+    updatedAt: DateTime!
+    watchersCount: String
+    website: String
+
+    stargazers(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): UserConnection
+}
+
+"""ExternalTracker represents settings for external tracker"""
+type ExternalTracker {
+    """
+    External Issue Tracker URL Format. Use the placeholders {user}, {repo} and {index} for the username, repository name and issue index.
+    """
+    externalTrackerFormat: String!
+
+    """
+    External Issue Tracker Number Format, either `numeric` or `alphanumeric`
+    """
+    externalTrackerStyle: String!
+
+    """URL of external issue tracker."""
+    externalTrackerUrl: String!
+}
+
+"""ExternalWiki represents setting for external wiki"""
+type ExternalWiki {
+    """URL of external wiki."""
+    externalWikiUrl: String
+}
+
+"""InternalTracker represents settings for internal tracker"""
+type InternalTracker {
+    """Let only contributors track time (Built-in issue tracker)"""
+    allowOnlyContributorsToTrackTime: Boolean
+
+    """
+    Enable dependencies for issues and pull requests (Built-in issue tracker)
+    """
+    enableIssueDependencies: Boolean
+
+    """Enable time tracking (Built-in issue tracker)"""
+    enableTimeTracker: Boolean
+}
+
+"""Permission represents a set of permissions"""
+type Permission {
+    admin: Boolean!
+    pull: Boolean!
+    push: Boolean!
+}
+
+
+type RepositoryConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [RepositoryEdge!]!
+}
+
+type RepositoryEdge {
+    cursor: Cursor!
+    node: Repository!
+}
+
+
+enum RepositoryOrderBy {
+    """Order alphabetically, ascending"""
+    NAME_ASC
+    """Order alphabetically, descending"""
+    NAME_DESC
+    """Order by when updated, ascending"""
+    UPDATED_ASC
+    """Order by when updated, descending"""
+    UPDATED_DESC
+    """Order by when created, ascending"""
+    CREATED_ASC
+    """Order by when created, descending"""
+    CREATED_DESC
+    """Order by when size, ascending"""
+    SIZE_ASC
+    """Order by when size, descending"""
+    SIZE_DESC
+    """Order by internal representation, ascending"""
+    INTERNAL_ASC
+    """Order by internal representation, descending"""
+    INTERNAL_DESC
+}
+
+enum RepositoryKind {
+    FORK
+    SOURCE
+    MIRROR
+    COLLABORATIVE
+}
+
+input RepositoryCondition {
+    query: String
+    queryTopic: String
+    queryDescription: String
+    includePrivate: Boolean
+    includePublic:  Boolean
+    includeTemplates: Boolean
+    includeArchived: Boolean
+    includeNonArchived: Boolean
+}
+
+extend type Query {
+    repositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: RepositoryCondition
+        orderBy: RepositoryOrderBy
+    ): RepositoryEdge
+}
+
+extend interface Owner {
+    repositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: RepositoryCondition
+        orderBy: RepositoryOrderBy
+    ): RepositoryEdge
+
+    repository(login: String!): Repository!
+}
+
+
+extend type Organization {
+    repositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: RepositoryCondition
+        orderBy: RepositoryOrderBy
+    ): RepositoryEdge
+
+    repository(login: String!): Repository!
+}
+
+extend type User {
+    repositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: RepositoryCondition
+        orderBy: RepositoryOrderBy
+    ): RepositoryEdge
+
+    repository(login: String!): Repository!
+
+    starredRepositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: RepositoryCondition
+        orderBy: RepositoryOrderBy
+    ): RepositoryEdge
+
+    contributedToRepositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        searchCondition: RepositoryCondition
+        orderBy: RepositoryOrderBy
+    ): RepositoryEdge
+}
+
+
+"""MigrateRepoForm form for migrating repository"""
+input MigrateRepositoryInput {
+    authPassword: String
+    authUsername: String
+    cloneAddress: String!
+    description: String
+    issues: Boolean
+    labels: Boolean
+    milestones: Boolean
+    mirror: Boolean
+    private: Boolean
+    pullRequests: Boolean
+    releases: Boolean
+    repositoryName: String!
+    includeWiki: Boolean
+
+    owner: ID!
+}
+
+
+"""ExternalTracker represents settings for external tracker"""
+input ExternalTrackerInput {
+    """
+    External Issue Tracker URL Format. Use the placeholders {user}, {repo} and {index} for the username, repository name and issue index.
+    """
+    externalTrackerFormat: String
+
+    """
+    External Issue Tracker Number Format, either `numeric` or `alphanumeric`
+    """
+    externalTrackerStyle: String
+
+    """URL of external issue tracker."""
+    externalTrackerUrl: String
+}
+
+"""ExternalWiki represents setting for external wiki"""
+input ExternalWikiInput {
+    """URL of external wiki."""
+    externalWikiUrl: String
+}
+
+"""InternalTracker represents settings for internal tracker"""
+input InternalTrackerInput {
+    """Let only contributors track time (Built-in issue tracker)"""
+    allowOnlyContributorsToTrackTime: Boolean
+
+    """
+    Enable dependencies for issues and pull requests (Built-in issue tracker)
+    """
+    enableIssueDependencies: Boolean
+
+    """Enable time tracking (Built-in issue tracker)"""
+    enableTimeTracker: Boolean
+}
+
+"""EditRepoOption options when editing a repository's properties"""
+input EditRepositoryInput {
+    """
+    either `true` to allow merging pull requests with a merge commit, or `false` to prevent merging pull requests with merge commits. `hasPullRequests` must be `true`.
+    """
+    allowMergeCommits: Boolean!
+
+    """
+    either `true` to allow rebase-merging pull requests, or `false` to prevent rebase-merging. `hasPullRequests` must be `true`.
+    """
+    allowRebase: Boolean!
+
+    """
+    either `true` to allow rebase with explicit merge commits (--no-ff), or `false` to prevent rebase with explicit merge commits. `hasPullRequests` must be `true`.
+    """
+    allowRebaseExplicit: Boolean!
+
+    """
+    either `true` to allow squash-merging pull requests, or `false` to prevent squash-merging. `hasPullRequests` must be `true`.
+    """
+    allowSquashMerge: Boolean!
+
+    """sets the default branch for this repository."""
+    defaultBranch: String
+
+    """a short description of the repository."""
+    description: String
+
+    """ExternalTracker represents settings for external tracker"""
+    externalTracker: ExternalTrackerInput
+
+    """ExternalWiki represents setting for external wiki"""
+    externalWiki: ExternalWikiInput
+
+    """
+    either `true` to enable issues for this repository or `false` to disable them.
+    """
+    hasIssues: Boolean!
+
+    """
+    either `true` to allow pull requests, or `false` to prevent pull request.
+    """
+    hasPullRequests: Boolean!
+
+    """
+    either `true` to enable the wiki for this repository or `false` to disable it.
+    """
+    hasWiki: Boolean!
+
+    """
+    either `true` to ignore whitespace for conflicts, or `false` to not ignore whitespace. `hasPullRequests` must be `true`.
+    """
+    ignoreWhitespaceConflicts: Boolean!
+
+    """InternalTracker represents settings for internal tracker"""
+    internalTracker: InternalTrackerInput
+
+
+    """a URL with more information about the repository."""
+    website: String!
+}
+
+
+"""CreateRepoOption options when creating repository"""
+input CreateRepositoryInput {
+    """Whether the repository should be auto-intialized?"""
+    autoInit: Boolean
+    """
+    DefaultBranch of the repository (used when initializes and in template)
+    """
+    defaultBranch: String
+
+    """Description of the repository to create"""
+    description: String
+
+    """Gitignores to use"""
+    gitignores: String
+
+    """Issue Label set to use"""
+    issueLabels: String
+
+    """License to use"""
+    license: String
+
+    """Name of the repository to create"""
+    name: String!
+
+    owner: ID!
+
+    """Whether the repository is private"""
+    private: Boolean
+
+    """Readme of the repository to create"""
+    readme: String
+}
+
+
+
+extend type Mutation {
+    migrateRepository(input: MigrateRepositoryInput) : Repository!
+    deleteRepository   (id: ID!): Repository!
+    publicizeRepository(id: ID!): Repository!
+    privatizeRepository(id: ID!): Repository!
+    archiveRepository  (id: ID!): Repository!
+    turnRepositoryIntoTemplate(id: ID!): Repository!
+    turnRepositoryIntoRegular (id: ID!): Repository!
+    renameRepository(id: ID! newName:String!): Repository!
+    updateRepository(id: ID! options:EditRepositoryInput!): Repository!
+
+    createRepository(repository:CreateRepositoryInput!): Repository!
+}
+
+union KeyOwner = User | Organization | Repository
+
+"""PublicKey publickey is a user key to push code to repository"""
+type Key implements Node @key(fields: "id") @key(fields: "fingerprint owner { login }")  @key(fields: "fingerprint owner { id }") {
+    id: ID!
+    createdAt: DateTime
+    fingerprint: String
+    key: String
+    keyType: String
+    readOnly: Boolean
+    title: String
+    url: String
+
+    """User or Repository"""
+    owner: KeyOwner!
+}
+
+type KeyConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [KeyEdge!]!
+}
+
+type KeyEdge {
+    cursor: Cursor!
+    node: Key!
+}
+
+extend type Repository {
+    keys(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+    ): KeyConnection
+
+    key(fingerprint: String!): Key!
+}
+
+extend type User {
+    keys(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+    ): KeyConnection
+
+    key(fingerprint: String!): Key!
+}
+
+
+"""CreateKeyOption options when creating a key"""
+input AddKeyInput {
+    """An armored SSH key to add"""
+    key: String!
+
+    """Describe if the key has only read access or read/write"""
+    readOnly: Boolean
+
+    """Title of the key to add"""
+    title: String!
+}
+
+extend type Mutation {
+    deleteKey(id: ID!): Key
+
+    addUserKey(login: String! input: AddKeyInput!) : Key!
+    deleteUserKey(login: String! finterprint: String!) : Key!
+
+    addRepositoryKey(login: String! repository: String! input: AddKeyInput!): Key!
+    deleteRepositoryKey(login: String! repository: String! finterprint: String!)  : Key!
+}
+
+
+type AdminQuery implements Node {
+    id : ID!
+    owners(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): OwnerEdge
+
+    users(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): UserEdge
+
+    organizations(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): OrganizationEdge
+}
+
+extend type Query {
+    admin: AdminQuery
+}
+
+
+"""CreateUserOption create user options"""
+input CreateUserInput {
+    email: String!
+    fullName: String
+    loginName: String
+    mustChangePassword: Boolean
+    password: String!
+    sendNotify: Boolean
+    sourceId: String
+    username: String!
+}
+
+# Everthing that is under /admin -> nested mutations should make sense here
+type AdminMutation implements Node {
+    id: ID!
+
+    createUser(input: CreateUserInput): User!
+    deleteUser(login: String!): User!
+
+    addUserKey(login: String! key: AddKeyInput) : Key!
+    deleteUserKey(login: String! fingerprint: String!): Key!
+    createOrganization(input: CreateOrganizationInput) : Organization!
+    createRepository(input: CreateRepositoryInput): Repository!
+}
+
+extend type Mutation {
+    admin: AdminMutation
+}
+
+"""NotificationThread expose Notification on API"""
+type Notification implements Node @key(fields: "id")  {
+    id: ID!
+    pinned: Boolean
+
+    """Repository represents a repository"""
+    repository: Repository
+
+    """
+    NotificationSubject contains the notification subject (Issue/Pull/Commit)
+    """
+    subject: NotificationSubject
+    unread: Boolean
+    updatedAt: DateTime
+    url: String
+}
+
+
+"""
+NotificationSubject contains the notification subject (Issue/Pull/Commit)
+"""
+type NotificationSubject {
+    latestCommentUrl: String
+    title: String!
+    type: String!
+    url: String
+}
+
+"""NotificationCount number of unread notifications"""
+type NotificationCount {
+    new: String!
+}
+
+type NotificationConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [NotificationEdge!]!
+}
+
+type NotificationEdge {
+    cursor: Cursor!
+    node: Notification!
+}
+
+extend type Query {
+    newNotifications: Int!
+    notification(id: ID!): Notification
+    notifications(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): NotificationConnection
+}
+
+extend type Repository {
+    notification(id: ID!): Notification
+    notifications(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): NotificationConnection
+}
+
+extend type Mutation {
+    readNotifications(since: DateTime): Int!
+    readNotification(id: ID!): Notification
+}
+
+scalar JSON
+
+union HookOwner = Repository | Organization
+
+"""Hook a hook is a web hook when one repository changed"""
+type Hook implements Node @key(fields: "id")  {
+    active: Boolean!
+    config: JSON
+    createdAt: DateTime
+    events: [String!]
+    id: ID!
+    type: String!
+
+    owner: HookOwner!
+
+    updatedAt: DateTime
+}
+
+type HookConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [HookEdge!]!
+}
+
+type HookEdge {
+    cursor: Cursor!
+    node: Hook!
+}
+
+extend type Organization {
+    hook(id: ID!): Hook
+    hooks(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): HookConnection
+}
+
+extend type Repository {
+    hook(id: ID!): Hook
+    hooks(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): HookConnection
+}
+
+"""CreateHookOption options when create a hook"""
+input CreateHookInput {
+    active: Boolean
+    branchFilter: String
+
+    oranizationOrRepository: ID!
+
+    """
+    CreateHookOptionConfig has all config options in it
+    required are "contentType" and "url" Required
+    """
+    config: JSON!
+    events: [String!]
+    type: String!
+}
+
+
+"""EditHookOption options when modify one hook"""
+input EditHookOptionInput {
+    active: Boolean
+    branchFilter: String
+    config: JSON
+    events: [String!]
+}
+
+extend type Mutation {
+    createHook(input: CreateHookInput) : Hook!
+
+    activateHook(id: ID!): Hook!
+    deactivateHook(id: ID!): Hook!
+
+    setHookConfig(id: ID! config: JSON!): Hook!
+    setHookBranchFilter(id: ID! branchFilter: String!): Hook!
+    addHookEvents   (id: ID! events: [String!]!): Hook!
+    removeHookEvents(id: ID! events: [String!]!): Hook!
+    clearHookEvents (id: ID!): Hook!
+
+    deleteHook(id: ID!): Hook!
+    testHook(id: ID!) : Boolean!
+}
+
+"""Label a label to an issue or a pr"""
+type Label implements Node @key(fields: "id") {
+    color: String
+    description: String
+    id: ID!
+
+    owner: Labelable
+
+    name: String!
+    url: String!
+}
+
+
+type LabelConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [LabelEdge!]!
+}
+
+type LabelEdge {
+    cursor: Cursor!
+    node: Label!
+}
+
+interface Labelable {
+    label(id: ID!): Label
+    labels(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): LabelConnection
+}
+
+
+type LabelableConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [LabelableEdge!]!
+}
+
+type LabelableEdge {
+    cursor: Cursor!
+    node: Labelable!
+}
+
+extend type Label {
+    labeled(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): LabelableConnection
+}
+
+
+extend type Organization implements Labelable{
+    label(id: ID!): Label
+    labels(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): LabelConnection
+}
+
+extend type Repository implements Labelable{
+    label(id: ID!): Label
+    labels(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): LabelConnection
+}
+
+"""CreateLabelOption options for creating a label"""
+input CreateLabelInput {
+    color: String!
+    description: String
+    name: String!
+
+    oranizationOrRepository: ID!
+}
+
+"""EditLabelOption options for editing a label"""
+input EditLabelInput {
+    color: String
+    description: String
+    name: String
+}
+
+extend type Mutation {
+    createLabel(input: CreateLabelInput): Label!
+    editLabel(id: ID! input: EditLabelInput!): Label!
+    deleteLabel(id: ID!): Label!
+}
+
+
+"""Team represents a team in an organization"""
+type Team implements Node
+@key(fields: "id")
+@key(fields: "name organization { id }")
+@key(fields: "name organization { login }")
+{
+    canCreateOrganizationRepo: Boolean!
+    description: String
+    id: ID!
+    includesAllRepositories: Boolean!
+    name: String!
+
+    """Organization represents an organization"""
+    organization: Organization!
+    permission: String
+    units: [String!]
+
+    members(
+        first: Int
+        last: Int
+        offset: Int
+        before: Int
+    ): UserConnection
+
+    member(login: String!) : User
+
+    repositories(
+        first: Int
+        last: Int
+        offset: Int
+        before: Int
+    ): RepositoryConnection
+}
+
+
+type TeamConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [TeamEdge!]!
+}
+
+type TeamEdge {
+    cursor: Cursor!
+    node: Team!
+}
+
+extend type Organization {
+    team(id: ID!): Hook
+    teams(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        query: String
+        searchDescription: Boolean): TeamConnection
+}
+
+"""CreateTeamOption options for creating a team"""
+input CreateTeamInput {
+    canCreateOrgRepo: Boolean
+    description: String
+    includesAllRepositories: Boolean
+    name: String!
+    organization: String!
+    permission: String
+    units: [String!]
+}
+
+"""EditTeamOption options for editing a team"""
+input EditTeamInput {
+    canCreateOrgRepo: Boolean
+    description: String
+    includesAllRepositories: Boolean
+    name: String!
+    permission: String
+    units: [String!]
+}
+
+
+extend type Mutation {
+    createTeam(input: CreateTeamInput!): Team!
+    deleteTeam(team: ID!): Team!
+    editTeam(team: ID!
+        input: EditTeamInput!): Team!
+
+    addUserToTeam     (team: ID! user: ID!): Team!
+    removeUserFromTeam(team: ID! user: ID!): Team!
+
+    addRepositoryToTeam     (team: ID! repository: ID!): Team!
+    removeRepositoryFromTeam(team: ID! repository: ID!): Team!
+}
+
+interface Reactable {
+    reaction(id: ID!) : Reaction
+    reactions(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): ReactionConnection
+}
+
+
+interface Ticket implements Node @key(fields: "id")
+    @key(fields: "index repository { id } ")
+    @key(fields: "index repository { owner { id } } ")
+    @key(fields: "index repository { owner { login } } ")
+{
+    """User represents a user"""
+    assignees: [User!]
+    body: String
+    closedAt: DateTime
+    createdAt: DateTime
+    dueDate: DateTime
+    htmlUrl: String
+    id: ID!
+    index: Int!
+
+    """Milestone milestone is a collection of issues on one repository"""
+    milestone: Milestone
+    originalAuthor: User
+
+
+    """RepositoryMeta basic repository information"""
+    repository: Repository!
+
+    """StateType issue state type"""
+    state: State!
+    title: String
+    updatedAt: DateTime
+    url: String
+}
+
+type TicketConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [TicketEdge!]!
+}
+
+type TicketEdge {
+    cursor: Cursor!
+    node: Ticket!
+}
+
+input TicketCondition {
+    queryString: String
+    type: String
+    milestones: [ID!]
+    labels: [String!]
+    state: State
+}
+
+extend type Repository {
+    ticket(id: ID!): Hook
+    tickets(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: TicketCondition): TicketConnection
+}
+
+extend type Mutation {
+    assignTicketToUsers(id: ID! login: [ID!]!) : Issue!
+    openTicket (id: ID!): Issue!
+    closeTicket(id: ID!): Issue!
+    assignMilestoneToTicket(id: ID! milestone: ID!): Issue!
+}
+
+"""Issue represents an issue in a repository"""
+type Issue implements Node & Labelable & Subscribable & Reactable & TimeTrackable & Ticket
+{
+    """User represents a user"""
+    assignees: [User!]
+    body: String
+    closedAt: DateTime
+    createdAt: DateTime
+    dueDate: DateTime
+    htmlUrl: String
+    id: ID!
+    index: Int!
+
+
+    """Milestone milestone is a collection of issues on one repository"""
+    milestone: Milestone
+    number: String
+    originalAuthor: User
+
+
+    """RepositoryMeta basic repository information"""
+    repository: Repository!
+
+    """StateType issue state type"""
+    state: State!
+    title: String
+    updatedAt: DateTime
+    url: String
+
+    label(id: ID!): Label
+    labels(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): LabelConnection
+
+    comment(id: ID!): Comment
+    comments(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): CommentConnection
+
+    reaction(id: ID!) : Reaction
+    reactions(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): ReactionConnection
+
+    subscription(id: ID!) : SusbcriptionConnection
+    subscriptions(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): SusbcriptionConnection
+
+    time(id: ID!) : TrackedTime
+    times(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): TrackedTimeConnection
+}
+
+
+type IssueConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [IssueEdge!]!
+}
+
+type IssueEdge {
+    cursor: Cursor!
+    node: Issue!
+}
+
+
+extend type Repository {
+    issue(index: Int!): Hook
+    issues(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: TicketCondition): IssueConnection
+}
+
+"""CreateIssueOption options to create one issue"""
+input CreateIssueInput {
+    """username of assignee"""
+    assignee: String
+    assignees: [String!]
+    body: String
+    closed: Boolean
+    dueDate: String
+
+    repository: ID!
+
+    """list of label ids"""
+    labels: [String!]
+
+    """milestone id"""
+    milestone: String
+    title: String!
+}
+
+"""EditIssueOption options for editing an issue"""
+input EditIssueInput {
+    body: String
+    dueDate: String
+    title: String
+    unsetDueDate: Boolean
+}
+
+extend type Mutation {
+    createIssue(input: CreateIssueInput): Issue!
+    editIssue(id: ID! input: EditIssueInput!): Issue!
+}
+
+
+"""Milestone milestone is a collection of issues on one repository"""
+type Milestone implements Node
+    @key(fields: "id")
+    @key(fields: "title repository { id } ")
+    @key(fields: "title repository { owner { id } } ")
+    @key(fields: "title repository { owner { login } } ")
+{
+    closedAt: String
+    closedIssues: String
+    description: String
+    dueOn: String
+    id: ID!
+
+    repository: Repository!
+
+    tickets(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: TicketCondition): TicketConnection
+
+    """StateType issue state type"""
+    state: State
+    title: String!
+}
+
+"""CreateMilestoneOption options for creating a milestone"""
+input CreateMilestoneInput {
+
+    repository: ID!
+
+    description: String
+    dueOn: String
+    title: String
+}
+
+"""EditMilestoneOption options for editing a milestone"""
+input EditMilestoneInput {
+    description: String
+    dueOn: String
+    state: String
+    title: String
+}
+
+
+type MilestoneConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [MilestoneEdge!]!
+}
+
+type MilestoneEdge {
+    cursor: Cursor!
+    node: Milestone!
+}
+
+extend type Repository {
+    milestone(id: ID!): Milestone
+    milestones(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): MilestoneConnection
+}
+
+extend type Mutation {
+    createMilestone(input: CreateMilestoneInput): Milestone!
+    editMilestone  (id: ID! input: EditMilestoneInput): Milestone!
+    deleteMilestone(id: ID!): Milestone!
+}
+
+"""BranchProtection represents a branch protection for a repository"""
+type BranchProtection implements Node
+    @key(fields: "id")
+    @key(fields: "branch { id } ")
+    @key(fields: "branch { name } repository { id } ")
+    @key(fields: "branch { name } repository { owner { id } } ")
+    @key(fields: "branch { name } repository { owner { login } } ")
+{
+    approvalsWhitelistTeams: [String!]
+    approvalsWhitelistUsername: [String!]
+    blockOnOutdatedBranch: Boolean!
+    blockOnRejectedReviews: Boolean!
+    branch: Branch
+    createdAt: DateTime
+    dismissStaleApprovals: Boolean
+    enableApprovalsWhitelist: Boolean
+    enableMergeWhitelist: Boolean
+    enablePush: Boolean!
+    enablePushWhitelist: Boolean!
+    enableStatusCheck: Boolean!
+
+    repository: Repository
+
+    id: ID!
+
+    mergeWhitelistTeams: [String!]
+    mergeWhitelistUsernames: [String!]
+    protectedFilePatterns: String
+    pushWhitelistDeployKeys: Boolean!
+    pushWhitelistTeams: [String!]
+    pushWhitelistUsernames: [String!]
+    requireSignedCommits: Boolean!
+    requiredApprovals: String
+    statusCheckContexts: [String!]
+    updatedAt: DateTime!
+}
+
+type BranchProtectionConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [BranchProtectionEdge!]!
+}
+
+type BranchProtectionEdge {
+    cursor: Cursor!
+    node: BranchProtection!
+}
+
+extend type Repository {
+    branchProtection(branch: String!): BranchProtection
+    branchProtections(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): BranchProtectionConnection
+}
+
+
+"""CreateBranchProtectionOption options for creating a branch protection"""
+input CreateBranchProtectionInput {
+    approvalsWhitelistTeams: [String!]
+    approvalsWhitelistUsername: [String!]
+    blockOnOutdatedBranch: Boolean!
+    blockOnRejectedReviews: Boolean!
+    branchName: String
+    dismissStaleApprovals: Boolean!
+    enableApprovalsWhitelist: Boolean!
+    enableMergeWhitelist: Boolean!
+    enablePush: Boolean!
+    enablePushWhitelist: Boolean!
+    enableStatusCheck: Boolean!
+    mergeWhitelistTeams: [String!]
+    mergeWhitelistUsernames: [String!]
+    protectedFilePatterns: String
+    pushWhitelistDeployKeys: Boolean
+    pushWhitelistTeams: [String!]
+    pushWhitelistUsernames: [String!]
+    requireSignedCommits: Boolean
+    requiredApprovals: String
+    statusCheckContexts: [String!]
+
+    repository: ID!
+}
+
+"""EditBranchProtectionOption options for editing a branch protection"""
+input EditBranchProtectionInput {
+    approvalsWhitelistTeams: [String!]
+    approvalsWhitelistUsername: [String!]
+    blockOnOutdatedBranch: Boolean!
+    blockOnRejectedReviews: Boolean!
+    dismissStaleApprovals: Boolean!
+    enableApprovalsWhitelist: Boolean!
+    enableMergeWhitelist: Boolean!
+    enablePush: Boolean!
+    enablePushWhitelist: Boolean!
+    enableStatusCheck: Boolean!
+    mergeWhitelistTeams: [String!]
+    mergeWhitelistUsernames: [String!]
+    protectedFilePatterns: String
+    pushWhitelistDeployKeys: Boolean!
+    pushWhitelistTeams: [String!]
+    pushWhitelistUsernames: [String!]
+    requireSignedCommits: Boolean
+    requiredApprovals: String
+    statusCheckContexts: [String!]
+}
+
+extend type Mutation {
+    createBranchProtection(input: CreateBranchProtectionInput): BranchProtection!
+    editBranchProtection  (branch: ID! input: EditBranchProtectionInput): BranchProtection!
+    deleteBranchProtection(branch: ID!): BranchProtection!
+}
+
+"""Branch represents a repository branch"""
+type Branch implements Node
+    @key(fields: "id")
+    @key(fields: "name repository { id } ")
+    @key(fields: "name repository { owner { id } } ")
+    @key(fields: "name repository { owner { login } } ")
+{
+    id: ID!
+
+    """PayloadCommit represents a commit"""
+    commit: Commit
+    effectiveBranchProtectionName: String
+    enableStatusCheck: Boolean
+    name: String!
+
+    repository: Repository
+
+    protected: Boolean
+    protection: BranchProtection
+    requiredApprovals: String
+    statusCheckContexts: [String!]
+    userCanPush: Boolean
+    userCanMerge: Boolean
+}
+
+type BranchConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [BranchEdge!]!
+}
+
+type BranchEdge {
+    cursor: Cursor!
+    node: Branch!
+}
+
+extend type Repository {
+    branch(name: String!): Branch
+    branches(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): BranchConnection
+}
+
+
+extend type Mutation {
+    createBranch(branch: ID! from: String!): Branch!
+    deleteBranch(branch: ID!): Branch!
+}
+
+type CollaboratorConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [CollaboratorEdge!]!
+}
+
+type CollaboratorEdge {
+    """A cursor for use in pagination."""
+    cursor: Cursor!
+    """The node the end of the edge."""
+    node: User!
+
+    permission: String
+}
+
+extend type Repository {
+    collaborators(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        filterByPermission: String) : CollaboratorConnection
+
+    collaboratorPermission(login: String!) : String
+}
+
+extend type Mutation {
+    addCollaborator(repository: ID! collaborator: ID! permission: String) : String!
+    removeCollaborator(repository: ID! collaborator: ID!) : String!
+}
+
+
+"""PayloadCommitVerification represents the GPG verification of a commit"""
+type CommitVerification {
+    payload: String
+    reason: String
+    signature: String
+
+    """PayloadUser represents the author or committer of a commit"""
+    signer: User
+    verified: Boolean
+}
+
+"""PayloadCommit represents a commit"""
+type Commit implements Node
+    @key(fields: "id")
+    @key(fields: "sha repository { id } ")
+    @key(fields: "sha repository { owner { id } } ")
+    @key(fields: "sha repository { owner { login } } ")
+{
+
+    id: ID!
+
+    author: User
+    committer: User
+
+    """sha1 hash of the commit"""
+
+    repository: Repository!
+
+    message: String!
+    timestamp: DateTime!
+    htmlUrl: String
+    tree: GitTree
+
+    parents: [Commit!]!
+    sha: String!
+    url: String
+
+    """PayloadCommitVerification represents the GPG verification of a commit"""
+    verification: CommitVerification
+}
+
+
+type CommitConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [CommitEdge!]!
+}
+
+type CommitEdge {
+    cursor: Cursor!
+    node: Commit!
+}
+
+extend type Repository {
+    commit(sha: String!): String
+    commits(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        startWith: String): CommitConnection
+}
+
+
+enum CommitStatusState {
+    PENDING
+    SUCCESS
+    ERROR
+    FAILURE
+    WARNING
+}
+
+"""Status holds a single Status of a single Commit"""
+type CommitStatus implements Node @key(fields: "id") {
+    context: String
+    createdAt: DateTime
+
+    """User represents a user"""
+    creator: User
+    description: String
+    id: ID!
+
+    """
+    StatusState holds the state of a Status
+    It can be "pending", "success", "error", "failure", and "warning"
+    """
+    status: CommitStatusState
+    targetUrl: String
+    updatedAt: DateTime
+    url: String
+}
+
+
+type CommitStatusConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [CommitStatusEdge!]!
+}
+
+type CommitStatusEdge {
+    cursor: Cursor!
+    node: CommitStatus!
+}
+
+enum StatusOrderBy {
+    """Order by when updated, ascending"""
+    UPDATED_ASC
+    """Order by when updated, descending"""
+    UPDATED_DESC
+    """Order by when created, ascending"""
+    CREATED_ASC
+    """Order by when created, descending"""
+    CREATED_DESC
+    """Order by internal representation, ascending"""
+    INTERNAL_ASC
+    """Order by internal representation, descending"""
+    INTERNAL_DESC
+
+}
+
+extend type Commit {
+    combinedStatus: CommitStatusState
+    statuses(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        orderBy: StatusOrderBy
+        state: CommitStatusState): CommitStatusConnection
+}
+
+"""
+CreateStatusOption holds the information needed to create a new Status for a Commit
+"""
+input CreateCommitStatus {
+    context: String
+    description: String
+
+    """
+    StatusState holds the state of a Status
+    It can be "pending", "success", "error", "failure", and "warning"
+  """
+    state: CommitStatusState
+    targetUrl: String
+}
+
+
+extend type Mutation {
+    createCommitStatus(owner: String! repository: String! sha: String! input: CreateCommitStatus!) : CommitStatus!
+}
+
+enum ContentType { FILE DIR SYMLINK SUBMODULE}
+
+"""FileLinksResponse contains the links for a repo's file"""
+type FileLinksResponse {
+    git: String
+    html: String
+    self: String
+}
+
+interface Content  implements Node
+    @key(fields: "id")
+    @key(fields: "path ref repository { id }")
+    @key(fields: "path ref repository { name owner { id } }")
+    @key(fields: "path ref repository { name owner { login } }")
+{
+    id: ID!
+    gitUrl: String
+    htmlUrl: String
+
+    repository: Repository!
+    ref: String!
+
+    name: String!
+    path: String!
+    url: String
+}
+
+type ContentSubmodule implements Content & Node
+{
+    """
+    `submoduleGitUrl` is populated when `type` is `submodule`, otherwise null
+    """
+    id: ID!
+    submoduleGitUrl: String
+
+    repository: Repository!
+    ref: String!
+
+    gitUrl: String
+    htmlUrl: String
+    name: String!
+    path: String!
+    url: String
+}
+
+type ContentSymlink implements Content & Node
+{
+    id: ID!
+    """`target` is populated when `type` is `symlink`, otherwise null"""
+    target: String
+    repository: Repository!
+    ref: String!
+    gitUrl: String
+    htmlUrl: String
+    name: String!
+    path: String!
+    url: String
+}
+
+type ContentFile implements Content & Node
+{
+    id: ID!
+
+    repository: Repository!
+    ref: String!
+
+    """FileLinksResponse contains the links for a repo's file"""
+    Links: FileLinksResponse
+
+    """`content` is populated when `type` is `file`, otherwise null"""
+    content: String
+    downloadUrl: String
+
+    """`encoding` is populated when `type` is `file`, otherwise null"""
+    encoding: String
+
+    size: String
+
+    gitUrl: String
+    htmlUrl: String
+    name: String!
+    path: String!
+    url: String
+}
+
+type ContentDirectory implements Content & Node
+{
+    id: ID!
+    gitUrl: String
+    htmlUrl: String
+    name: String!
+    path: String!
+    url: String
+
+    repository: Repository!
+    ref: String!
+
+    contents(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): ContentConnection
+}
+
+type ContentConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [ContentEdge!]!
+}
+
+type ContentEdge {
+    cursor: Cursor!
+    node: Content!
+}
+
+extend type Commit {
+    contents(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): ContentConnection
+
+    content(path: String!): Content
+    editorConfig(path: String!): JSON
+}
+
+"""Identity for a person's identity like an author or committer"""
+input IdentityInput {
+    email: String
+    name: String
+}
+
+"""
+CommitDateOptions store dates for GITAUTHORDATE and GITCOMMITTERDATE
+"""
+input CommitDateOptionsInput {
+    author: String
+    committer: String
+}
+
+"""
+CreateFileOptions options for creating files
+Note: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)
+"""
+input CreateContentsInput {
+    """Identity for a person's identity like an author or committer"""
+    author: IdentityInput
+
+    """
+    branch (optional) to base this file from. if not given, the default branch is used
+    """
+    branch: String
+
+    """Identity for a person's identity like an author or committer"""
+    committer: IdentityInput
+
+    """content must be base64 encoded"""
+    content: String!
+
+    """
+    CommitDateOptions store dates for GITAUTHORDATE and GITCOMMITTERDATE
+    """
+    dates: CommitDateOptionsInput
+
+    """
+    message (optional) for the commit of this file. if not supplied, a default message will be used
+    """
+    message: String
+
+    """
+    newBranch (optional) will make a new branch from `branch` before creating the file
+    """
+    newBranch: String
+
+    repository: ID!
+}
+
+
+"""
+UpdateFileOptions options for updating files
+Note: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)
+"""
+input UpdateContentsInput {
+    """Identity for a person's identity like an author or committer"""
+    author: IdentityInput
+
+    """
+    branch (optional) to base this file from. if not given, the default branch is used
+    """
+    branch: String
+
+    """Identity for a person's identity like an author or committer"""
+    committer: IdentityInput
+
+    """content must be base64 encoded"""
+    content: String!
+
+    """
+    CommitDateOptions store dates for GITAUTHORDATE and GITCOMMITTERDATE
+    """
+    dates: CommitDateOptionsInput
+
+    """
+    fromPath (optional) is the path of the original file which will be moved/renamed to the path in the URL
+    """
+    fromPath: String
+
+    """
+    message (optional) for the commit of this file. if not supplied, a default message will be used
+    """
+    message: String
+
+    """
+    newBranch (optional) will make a new branch from `branch` before creating the file
+    """
+    newBranch: String
+
+    """sha is the SHA for the file that already exists"""
+    sha: String!
+}
+
+
+extend type Mutation {
+    createContents(input: CreateContentsInput): Content!
+    updateContents(id: ID! input: UpdateContentsInput): Content!
+    deleteContents(id: ID!): Content!
+}
+
+extend type Repository {
+    forks(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): RepositoryConnection
+}
+
+extend type Mutation {
+    fork(repository: ID! targetOwner: ID!) : Repository!
+}
+
+extend type Repository {git: Git!}
+
+
+"""GitBlobResponse represents a git blob"""
+type GitBlob implements Node
+    @key(fields: "id")
+    @key(fields: "sha repository { id }")
+    @key(fields: "sha repository { name organization { id } }")
+    @key(fields: "sha repository { name organization { login } }")
+{
+    id: ID!
+    content: String!
+    encoding: String!
+
+    repository: Repository!
+
+    sha: String!
+    size: String!
+    url: String!
+}
+
+type GitObject {
+    sha: String!
+    ref: String!
+    url: String!
+}
+
+type GitRef implements Node
+    @key(fields: "id")
+    @key(fields: "ref repository { id }")
+    @key(fields: "ref repository { name organization { id } }")
+    @key(fields: "ref repository { name organization { login } }")
+{
+    id: ID!
+
+    repository: Repository!
+
+    object: GitObject!
+    ref: String!
+    url: String!
+}
+
+type GitRefConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [GitRefEdge!]!
+}
+
+type GitRefEdge {
+    cursor: Cursor!
+    node: GitRef!
+}
+
+"""GitTreeResponse returns a git tree"""
+type GitTree implements Node
+    @key(fields: "id")
+    @key(fields: "sha repository { id }")
+    @key(fields: "sha repository { name organization { id } }")
+    @key(fields: "sha repository { name organization { login } }")
+{
+    id: ID!
+
+    sha: String!
+
+    tree(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): GitEntryConnection!
+
+    truncated: Boolean
+    url: String
+}
+
+"""GitEntry represents a git tree"""
+type GitEntry implements Node
+    @key(fields: "id")
+    @key(fields: "path sha repository { id }")
+    @key(fields: "path sha repository { name organization { id } }")
+    @key(fields: "path sha repository { name organization { login } }")
+{
+    id: ID!
+    mode: String
+    path: String!
+    sha: String!
+
+    repository: Repository!
+
+    size: String
+    type: String
+    url: String
+}
+
+type GitEntryConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [GitEntryEdge!]!
+}
+
+type GitEntryEdge {
+    cursor: Cursor!
+    node: GitEntry!
+}
+
+"""AnnotatedTagObject contains meta information of the tag object"""
+type GitTagObject {
+    sha: String
+    type: String
+    url: String
+}
+
+
+"""AnnotatedTag represents an annotated tag"""
+type GitTag implements Node
+    @key(fields: "id")
+    @key(fields: "tag repository { id }")
+    @key(fields: "tag repository { name organization { id } }")
+    @key(fields: "tag repository { name organization { login } }")
+{
+    id: ID!
+
+    repository: Repository!
+    message: String
+
+    """AnnotatedTagObject contains meta information of the tag object"""
+    object: GitTagObject
+    sha: String
+    tag: String!
+    tagger: User
+    url: String
+
+    """PayloadCommitVerification represents the GPG verification of a commit"""
+    verification: CommitVerification
+}
+
+type GitTagConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [GitTagEdge!]!
+}
+
+type GitTagEdge {
+    cursor: Cursor!
+    node: GitTag!
+}
+
+type Git implements Node
+    @key(fields: "id")
+    @key(fields: "repository { id }")
+    @key(fields: "repository { name organization { id } }")
+    @key(fields: "repository { name organization { login } }")
+{
+    id: ID!
+
+    repository: Repository!
+
+    blob(sha: String!) : GitBlob
+    commit(sha: String!) : Commit
+
+    refs(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): GitRefConnection
+
+    ref(ref: String!) : GitRef
+    tags(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        sha: String!): GitTagConnection
+    tag(tag: String! sha: String!) : GitTag
+
+    tree(sha: String! recursive: Boolean) : GitTree
+}
+
+
+"""GitHook represents a Git repository hook"""
+type GitHook implements Node @key(fields: "id") {
+
+    repository: Repository!
+
+    id: ID!
+    content: String
+    isActive: Boolean
+    name: String
+}
+
+type GitHookConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [GitHookEdge!]!
+}
+
+type GitHookEdge {
+    cursor: Cursor!
+    node: GitHook!
+}
+
+extend type Git {
+    hooks(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): GitHookConnection
+
+    hook(id: ID!) : GitHook
+}
+
+extend type Mutation {
+    deleteGitHook(id: ID!): GitHook!
+    editGitHookContent(d: ID! content: String): GitHook!
+
+}
+
+extend type Mutation {
+    synchronizeMirrorRepository(repository: ID!): Repository
+}
+
+
+"""Comment represents a comment on a commit or issue"""
+type Comment implements Node & Reactable @key(fields: "id")
+{
+    body: String
+    createdAt: DateTime
+    htmlUrl: String
+    id: ID!
+    ticket: Ticket!
+    originalAuthor: String
+    originalAuthorId: String
+    pullRequestUrl: String
+    updatedAt: DateTime
+
+    """User represents a user"""
+    user: User
+
+    reaction(id: ID!) : Reaction
+    reactions(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): ReactionConnection
+}
+
+type CommentConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [CommentEdge!]!
+}
+
+type CommentEdge {
+    cursor: Cursor!
+    node: Comment!
+}
+
+extend type Mutation {
+    createIssueComment(issue: ID! body: String!): Comment!
+    addIssueDeadline(issue: ID! deadline: DateTime!): Comment!
+    removeIssueDeadline(issue: ID! deadline: DateTime!): Comment!
+}
+
+
+
+"""Reaction contain one reaction"""
+type Reaction implements Node @key(fields: "id") {
+    content: String
+    createdAt: DateTime
+
+    comment: Comment!
+    id: ID!
+
+    """User represents a user"""
+    user: User
+}
+
+type ReactionConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [ReactionEdge!]!
+}
+
+type ReactionEdge {
+    cursor: Cursor!
+    node: Reaction!
+}
+
+extend type Mutation {
+    react(reactable: ID! content: String!) : Reaction!
+    deleteReaction(rection: ID!): Reaction!
+}
+
+"""WatchInfo represents an API watch status of one repository"""
+type Susbcription implements Node @key(fields: "id") {
+    createdAt: DateTime
+    ignored: Boolean
+    reason: JSON
+    subject: Subscribable!
+    user: User!
+
+    id: ID!
+    url: String
+}
+
+type SusbcriptionConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [SusbcriptionEdge!]!
+}
+
+type SusbcriptionEdge {
+    cursor: Cursor!
+    node: Susbcription!
+}
+
+interface Subscribable {
+    subscription(id: ID!) : SusbcriptionConnection
+    subscriptions(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): SusbcriptionConnection
+}
+
+extend type Mutation {
+    subscribe(subscribable: ID! user: ID): SusbcriptionConnection!
+    unsubscribe(subscribable: ID! user: ID): SusbcriptionConnection!
+}
+
+
+extend type Mutation {
+    startStopwatch (watchable: ID!): DateTime!
+    stopStopwatch  (watchable: ID!): DateTime!
+    deleteStopwatch(watchable: ID!): DateTime!
+}
+
+"""TrackedTime worked time for an issue / pr"""
+type TrackedTime implements Node @key(fields: "id")
+{
+    created: String
+    id: ID!
+
+    """Issue represents an issue in a repository"""
+    subject: TimeTrackable!
+
+    """Time in seconds"""
+    time: String
+
+    user: User!
+}
+
+type TrackedTimeConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [TrackedTimeEdge!]!
+}
+
+type TrackedTimeEdge {
+    cursor: Cursor!
+    node: TrackedTime!
+}
+
+interface TimeTrackable {
+    time(id: ID!) : TrackedTime
+    times(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): TrackedTimeConnection
+}
+
+
+"""AddTimeOption options for adding time to an issue"""
+input CreateTrackedTime {
+    created: String
+
+    """time in seconds"""
+    time: String!
+
+    """User who spent the time (optional)"""
+    userName: String
+}
+
+extend type Mutation {
+    createTrackedTime(trackable: ID! input: CreateTrackedTime!): TrackedTime!
+    deleteTrackedTime(trackedTime: ID!): TrackedTime!
+    clearAllTrackedTimes(trackable: ID!): [TrackedTime!]!
+
+}
+
+"""PullRequest represents a pull request"""
+type PullRequest implements Node & Labelable & Subscribable & Reactable & TimeTrackable & Ticket
+{
+
+    id: ID!
+    index: Int!
+
+    """User represents a user"""
+    assignees: [User!]!
+
+    """Milestone milestone is a collection of issues on one repository"""
+    milestone: Milestone
+
+    """RepositoryMeta basic repository information"""
+    repository: Repository!
+
+    """StateType issue state type"""
+    state: State!
+
+    createdAt: DateTime
+    dueDate: DateTime
+
+
+    htmlUrl: String
+    originalAuthor: User
+    url: String
+    title: String
+    updatedAt: DateTime
+
+    body: String
+    closedAt: DateTime
+
+    base: Branch!
+    diffUrl: String
+
+    head: Branch!
+
+    mergeCommitSha: String
+    mergeable: Boolean!
+    merged: Boolean!
+    mergedAt: DateTime
+    mergedBy: User
+
+    patchUrl: String
+
+    label(id: ID!): Label
+    labels(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): LabelConnection
+
+    comment(id: ID!): Comment
+    comments(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): CommentConnection
+
+    reaction(id: ID!) : Reaction
+    reactions(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): ReactionConnection
+
+    subscription(id: ID!) : SusbcriptionConnection
+    subscriptions(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): SusbcriptionConnection
+
+    time(id: ID!) : TrackedTime
+    times(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): TrackedTimeConnection
+}
+
+type PullRequestConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [PullRequestEdge!]!
+}
+
+type PullRequestEdge {
+    cursor: Cursor!
+    node: PullRequest!
+}
+
+extend type Repository {
+    pullRequest(index: Int!) : PullRequest
+    pullRequests(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): PullRequestConnection
+}
+
+"""CreatePullRequestOption options when creating a pull request"""
+input CreatePullRequestInput {
+    assignees: [ID!]
+    base: String
+    body: String
+    dueDate: DateTime
+    head: String
+    labels: [String!]
+    milestone: ID!
+    title: String
+}
+
+"""EditPullRequestOption options when modify pull request"""
+input EditPullRequestInput {
+    assignee: String
+    assignees: [String!]
+    body: String
+    dueDate: DateTime
+    labels: [String!]
+    milestone: String
+    title: String
+    unsetDueDate: Boolean
+}
+
+"""MergePullRequestForm form for merging Pull Request"""
+input MergePullRequestInput {
+    Do: String!
+    MergeMessageField: String
+    MergeTitleField: String
+    forceMerge: Boolean
+}
+
+extend type Mutation {
+    createPullRequest(repository: ID! input: CreatePullRequestInput): PullRequest!
+    editPullRequest  (pullRequest:ID! input: EditPullRequestInput): PullRequest!
+    mergePullRequest (pullRequest:ID! input: MergePullRequestInput): JSON!
+}
+
+
+"""PullReview represents a pull request review"""
+type PullRequestReview implements Node @key(fields: "id")
+{
+    body: String
+    commentsCount: String
+    commit: Commit
+    htmlUrl: String
+    id: ID!
+    official: Boolean
+
+    pullRequest: PullRequest!
+
+    url: String
+    stale: Boolean
+    """ReviewStateType review state type"""
+    state: State
+    submittedAt: DateTime
+    """User represents a user"""
+    user: User
+}
+
+type PullRequestReviewConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [PullRequestReviewEdge!]!
+}
+
+type PullRequestReviewEdge {
+    cursor: Cursor!
+    node: PullRequestReview!
+}
+
+extend type PullRequest {
+    review(id: ID!) : PullRequestReview
+    reviews(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): PullRequestReviewConnection
+}
+
+
+"""PullReviewComment represents a comment on a pull request review"""
+type PullRequestReviewComment implements Node  @key(fields: "id") {
+    body: String
+    commitId: String
+    createdAt: DateTime
+    diffHunk: String
+    htmlUrl: String
+    id: ID!
+    originalCommitId: String
+    originalPosition: Int
+    path: String
+    position: Int
+
+    updatedAt: DateTime
+
+    review: PullRequestReview!
+    reviewer: User!
+}
+
+type PullRequestReviewCommentConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [PullRequestReviewCommentEdge!]!
+}
+
+type PullRequestReviewCommentEdge {
+    cursor: Cursor!
+    node: PullRequestReviewComment!
+}
+
+extend type PullRequestReview {
+    comment(id: ID!) : PullRequestReviewComment
+    comments(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): PullRequestReviewCommentConnection
+}
+
+
+"""CreatePullReviewOptions are options to create a pull review"""
+input CreatePullReviewOptionsInput {
+    body: String
+    comments: [CreatePullReviewCommentInput!]
+    commit: ID
+
+    """ReviewStateType review state type"""
+    event: String
+}
+
+"""CreatePullReviewComment represent a review comment for creation api"""
+input CreatePullReviewCommentInput {
+    body: String
+
+    """if comment to new file line or 0"""
+    newPosition: String
+
+    """if comment to old file line or 0"""
+    oldPosition: String
+
+    """the tree path"""
+    path: String
+
+    id: ID
+}
+
+
+extend type Mutation {
+    reviewPullRequest(pullRequest: ID! input: CreatePullReviewOptionsInput): PullRequestReview!
+    deletePullRequestReview(id: ID!) : PullRequestReview!
+}
+
+"""Release represents a repository release"""
+type Release implements Node
+@key(fields: "id")
+{
+    assets: [Attachment!]
+
+    """User represents a user"""
+    author: User
+    body: String
+    createdAt: DateTime
+    draft: Boolean
+    htmlUrl: String
+    id: ID!
+    name: String
+    prerelease: Boolean
+    publishedAt: DateTime
+    repository: Repository
+    tag: GitTag
+    tarballUrl: String
+    targetCommitish: String
+    targetCommit: Commit
+    url: String
+    zipballUrl: String
+}
+
+type ReleaseConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [ReleaseEdge!]!
+}
+
+type ReleaseEdge {
+    cursor: Cursor!
+    node: Release!
+}
+
+input ReleaseCondition
+{
+    prerelease: Boolean
+    tag: String
+}
+
+extend type Repository {
+    release(id: ID!) : Release
+    releases(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: ReleaseCondition): ReleaseConnection
+}
+
+"""CreateReleaseOption options when creating a release"""
+input CreateReleaseInput {
+    body: String!
+    draft: Boolean
+    name: String
+    prerelease: Boolean
+
+    repository: ID!
+
+    tag: String
+    targetCommitish: String!
+}
+
+"""EditReleaseOption options when editing a release"""
+input UpdateReleaseInput {
+    body: String
+    draft: Boolean
+    name: String
+    prerelease: Boolean
+    tagName: String
+    targetCommitish: String
+}
+
+extend type Mutation {
+    createRelease(input: CreateReleaseInput!): Release!
+    updateRelease(id: ID! input: UpdateReleaseInput!): Release!
+    deleteRelease(id: ID!): Release!
+}
+
+"""Attachment a generic attachment"""
+type Attachment implements Node @key(fields: "id")
+{
+    browserDownloadUrl: String
+    createdAt: DateTime
+    downloadCount: String
+    id: ID!
+    name: String
+
+    release: Release!
+
+    size: Int!
+    uuid: ID!
+}
+
+type AttachmentConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [AttachmentEdge!]!
+}
+
+type AttachmentEdge {
+    cursor: Cursor!
+    node: Attachment!
+}
+
+extend type Release
+{
+    attachment(uuid: ID!) : Release
+    attachments(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): AttachmentConnection
+}
+
+input CreateAttachementInput {
+    release: ID!
+    name: String!
+    content: Upload!
+}
+
+extend type Mutation
+{
+    createAttachment(input: CreateAttachementInput!) : Attachment
+    renameAttachment(id: ID! name: String!) : Attachment
+    deleteAttachment(id: ID!) : Attachment
+}
+
+extend type Repository implements TimeTrackable {
+    signingKey: String!
+    time(id: ID!) : TrackedTime
+    times(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): TrackedTimeConnection
+}
+
+"""TopicResponse for returning topics"""
+type Topic implements Node
+@key(fields: "id")
+@key(fields: "topicName repository { id } ")
+@key(fields: "topicName repository { name owner { id } }")
+@key(fields: "topicName repository { name owner { login } }")
+{
+    created: DateTime
+    id: ID!
+    repository: Repository!
+    topicName: String
+    updated: DateTime
+}
+
+type TopicConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [TopicEdge!]!
+}
+
+type TopicEdge {
+    cursor: Cursor!
+    node: Topic!
+}
+
+input TopicCondition
+{
+    queryString: String
+}
+
+
+extend type Repository {
+    topic(name: String!) : Topic
+    topics(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: TopicCondition): TopicConnection
+}
+
+extend type Mutation {
+    removeTopic  (repository: ID! name: String!) : Topic!
+    addTopic     (repository: ID! name: String!) : Topic!
+    replaceTopics(repository: ID! name: [String!]!) : TopicConnection!
+}
+
+
+extend type Query {
+    me: User
+}
+
+
+type OAuth2Application implements Node
+@key(fields: "id")
+@key(fields: "clientId")
+{
+    clientId: String!
+    clientSecret: String!
+    created: DateTime
+    id: ID!
+    name: String
+    redirectUris: [String!]
+    user: User!
+}
+
+type OAuth2ApplicationConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [OAuth2ApplicationEdge!]!
+}
+
+type OAuth2ApplicationEdge {
+    cursor: Cursor!
+    node: OAuth2Application!
+}
+
+extend type User {
+    oauth2Application(id: ID!) : OAuth2Application
+    oauth2Applications(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): OAuth2ApplicationConnection
+}
+
+"""CreateOAuth2ApplicationOptions holds options to create an oauth2 application"""
+input CreateOAuth2ApplicationInput {
+    name: String
+    redirectUris: [String!]
+}
+
+extend type Mutation {
+    createOAuth2Application(owner: ID! input: CreateOAuth2ApplicationInput!): OAuth2Application!
+    deleteOAuth2Application(application: ID!) : OAuth2Application
+    updateOAuth2ApplicationRedirectURLs(application: ID! redirectUrls: [String!]!): OAuth2Application
+    renameOAuth2Application(application: ID! newName:String!): OAuth2Application
+}
+
+"""Email an email address belonging to a user"""
+type Email implements Node @key(fields: "id") {
+    id: ID!
+    email: String!
+    primary: Boolean!
+    verified: Boolean!
+}
+
+type EmailConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [EmailEdge!]!
+}
+
+type EmailEdge {
+    cursor: Cursor!
+    node: Email!
+}
+
+extend type User {
+    primaryEmail: Email
+    emails: EmailConnection!
+}
+
+extend type Mutation {
+    addUserEmails  (user: ID! emails: [String!]!) : [Email!]!
+    removeUserEmail(user: ID! emails: [String!]!) : [Email!]!
+    setPrimaryEmail(user: ID! email: String): Email!
+}
+
+extend type User {
+    followers(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): UserConnection
+}
+
+input FollowingCondition {
+    followee: ID
+}
+
+extend type User {
+    following(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: FollowingCondition): UserConnection
+}
+
+extend type Mutation {
+    follow(follower: ID! followed: [ID!]!) : [User!]!
+    unfollow(follower: ID! followed: [ID!]!) : [User!]!
+}
+
+
+"""GPGKey a user GPG key to sign commit and tag in repository"""
+type GPGKey implements Node @key(fields: "id") {
+    canCertify: Boolean
+    canEncryptComms: Boolean
+    canEncryptStorage: Boolean
+    canSign: Boolean
+    createdAt: DateTime
+    emails: [GPGKeyEmail!]
+    expiresAt: DateTime
+    id: ID!
+    keyId: String
+    primaryKeyId: String
+    publicKey: String
+    subkeys: [GPGKey!]
+}
+
+"""GPGKeyEmail an email attached to a GPGKey"""
+type GPGKeyEmail {
+    email: String
+    verified: Boolean
+}
+
+type GPGKeyConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [GPGKeyEdge!]!
+}
+
+type GPGKeyEdge {
+    cursor: Cursor!
+    node: GPGKey!
+}
+
+extend type User {
+    gpgKey(id: ID!): GPGKey
+    gpgKeys(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): GPGKeyEdge
+}
+
+input StarredCondition
+{
+    repository: ID
+}
+
+extend type User {
+    starred(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor
+        condition: StarredCondition): RepositoryConnection
+}
+
+extend type Mutation {
+    star  (user: ID! repository: [ID!]!) : [Repository!]!
+    unstar(user: ID! repository: [ID!]!) : [Repository!]!
+}
+
+
+"""StopWatch represent a running stopwatch"""
+type StopWatch implements Node @key(fields: "id")  {
+    id: ID!
+    created: DateTime
+    issue: Issue
+}
+
+type StopWatchConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [StopWatchEdge!]!
+}
+
+type StopWatchEdge {
+    cursor: Cursor!
+    node: StopWatch!
+}
+
+extend type User {
+    stopWatches(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): StopWatchConnection
+
+    teams(first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor) : TeamConnection
+
+    times(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): TrackedTimeConnection
+}
+
+"""UserHeatmapData represents the data needed to create a heatmap"""
+type UserHeatmapData implements Node @key(fields: "id") {
+    id: ID!
+    contributions: String
+
+    """TimeStamp defines a timestamp"""
+    timestamp: DateTime
+}
+
+
+extend type User {
+    heatmap: UserHeatmapData!
+}
+
+
+type AccessToken implements Node
+    @key(fields: "id")
+    @key(fields: "name user { login }")
+    @key(fields: "name user { id }")
+{
+    id: ID!
+    name: String
+    sha1: String
+    tokenLastEight: String
+    user: User!
+}
+
+type AccessTokenConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [AccessTokenEdge!]!
+}
+
+type AccessTokenEdge {
+    cursor: Cursor!
+    node: AccessToken!
+}
+
+extend type User
+{
+    tokens(
+        first: Int
+        last: Int
+        offset: Int
+        before: Cursor
+        after: Cursor): AccessTokenConnection
+}
+
+extend type Mutation {
+    createAccessToken(user: ID! name: String!) : AccessToken!
+    deleteAccessToken(token: ID!) : AccessToken!
+}
+
+
+
+"""CreateUserOption create user options"""
+input CreateUserOptionInput {
+    email: String!
+    fullName: String
+    loginName: String
+    mustChangePassword: Boolean
+    password: String!
+    sendNotify: Boolean
+    sourceId: String
+    username: String!
+}
+
+"""EditUserOption edit user options"""
+input EditUserOptionInput {
+    active: Boolean
+    admin: Boolean
+    allowCreateOrganization: Boolean
+    allowGitHook: Boolean
+    allowImportLocal: Boolean
+    email: String!
+    fullName: String
+    location: String
+    loginName: String
+    maxRepoCreation: String
+    mustChangePassword: Boolean
+    password: String
+    prohibitLogin: Boolean
+    sourceId: String
+    website: String
+}
+
+"""CreateKeyOption options when creating a key"""
+input CreateKeyOptionInput {
+    """An armored SSH key to add"""
+    key: String!
+
+    """Describe if the key has only read access or read/write"""
+    readOnly: Boolean
+
+    """Title of the key to add"""
+    title: String!
+}
+
+"""CreateOrgOption options for creating an organization"""
+input CreateOrgOptionInput {
+    description: String
+    fullName: String
+    location: String
+    repoAdminChangeTeamAccess: Boolean
+    username: String!
+
+    """possible values are `public` (default), `limited` or `private`"""
+    visibility: String
+    website: String
+}
+

@@ -118,6 +118,8 @@ SWAGGER_SPEC_S_TMPL := s|"basePath": *"/api/v1"|"basePath": "{{AppSubUrl}}/api/v
 SWAGGER_SPEC_S_JSON := s|"basePath": *"{{AppSubUrl}}/api/v1"|"basePath": "/api/v1"|g
 SWAGGER_NEWLINE_COMMAND := -e '$$a\'
 
+#go run github.com/99designs/gqlgen init --config ./templates/gqlgen/gqlgen.yml --server routers/graphql/server.go --schema routers/graphql/schema.graphqls
+
 TEST_MYSQL_HOST ?= mysql:3306
 TEST_MYSQL_DBNAME ?= testgitea
 TEST_MYSQL_USERNAME ?= root

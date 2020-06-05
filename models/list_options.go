@@ -14,12 +14,13 @@ import (
 type ListOptions struct {
 	PageSize int
 	Page     int // start from 1
+	Offset int // additional offset
 }
 
 func (opts ListOptions) getPaginatedSession() *xorm.Session {
 	opts.setDefaultValues()
 
-	return x.Limit(opts.PageSize, (opts.Page-1)*opts.PageSize)
+	return x.Limit(opts.PageSize, ((opts.Page-1)*opts.PageSize) + opts.Offset)
 }
 
 func (opts ListOptions) setSessionPagination(sess *xorm.Session) *xorm.Session {
@@ -28,13 +29,13 @@ func (opts ListOptions) setSessionPagination(sess *xorm.Session) *xorm.Session {
 	if opts.PageSize <= 0 {
 		return sess
 	}
-	return sess.Limit(opts.PageSize, (opts.Page-1)*opts.PageSize)
+	return sess.Limit(opts.PageSize, ((opts.Page-1)*opts.PageSize) + opts.Offset)
 }
 
 func (opts ListOptions) setEnginePagination(e Engine) Engine {
 	opts.setDefaultValues()
 
-	return e.Limit(opts.PageSize, (opts.Page-1)*opts.PageSize)
+	return e.Limit(opts.PageSize, ((opts.Page-1)*opts.PageSize) + opts.Offset)
 }
 
 func (opts ListOptions) setDefaultValues() {

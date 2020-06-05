@@ -11,22 +11,18 @@ ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS "bindata $TAGS"
 
 #Build deps
-RUN apk --no-cache add build-base git nodejs npm
+RUN apk add build-base git nodejs npm
 
 #Setup repo
 COPY . ${GOPATH}/src/code.gitea.io/gitea
 WORKDIR ${GOPATH}/src/code.gitea.io/gitea
-
-#Checkout version if set
-RUN if [ -n "${GITEA_VERSION}" ]; then git checkout "${GITEA_VERSION}"; fi \
- && make clean-all build
 
 FROM alpine:3.11
 LABEL maintainer="maintainers@gitea.io"
 
 EXPOSE 22 3000
 
-RUN apk --no-cache add \
+RUN apk add \
     bash \
     ca-certificates \
     curl \
@@ -51,6 +47,10 @@ RUN addgroup \
     -G git \
     git && \
   echo "git:$(dd if=/dev/urandom bs=24 count=1 status=none | base64)" | chpasswd
+
+#Checkout version if set
+RUN if [ -n "${GITEA_VERSION}" ]; then git checkout "${GITEA_VERSION}"; fi \
+ && make clean-all build
 
 ENV USER git
 ENV GITEA_CUSTOM /data/gitea

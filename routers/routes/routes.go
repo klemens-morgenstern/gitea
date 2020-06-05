@@ -6,6 +6,7 @@ package routes
 
 import (
 	"bytes"
+	"code.gitea.io/gitea/routers/graphql"
 	"encoding/gob"
 	"net/http"
 	"path"
@@ -276,6 +277,7 @@ func RegisterRoutes(m *macaron.Macaron) {
 		ctx.Data["UnitIssuesGlobalDisabled"] = models.UnitTypeIssues.UnitGlobalDisabled()
 		ctx.Data["UnitPullsGlobalDisabled"] = models.UnitTypePullRequests.UnitGlobalDisabled()
 	})
+
 
 	// FIXME: not all routes need go through same middlewares.
 	// Especially some AJAX requests, we can reduce middleware number to improve performance.
@@ -1024,6 +1026,8 @@ func RegisterRoutes(m *macaron.Macaron) {
 	m.Group("/api", func() {
 		apiv1.RegisterRoutes(m)
 	}, handlers...)
+
+	graphql.RegisterGraphql(m)
 
 	m.Group("/api/internal", func() {
 		// package name internal is ideal but Golang is not allowed, so we use private as package name.
