@@ -44,6 +44,7 @@ func NewAccessToken(t *AccessToken) error {
 	if err != nil {
 		return err
 	}
+
 	t.TokenSalt = salt
 	t.Token = base.EncodeSha1(gouuid.NewV4().String())
 	t.TokenHash = hashToken(t.Token, t.TokenSalt)

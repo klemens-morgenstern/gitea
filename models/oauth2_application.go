@@ -207,8 +207,11 @@ func UpdateOAuth2Application(opts UpdateOAuth2ApplicationOptions) (*OAuth2Applic
 	if err != nil {
 		return nil, err
 	}
-	if app.UID != opts.UserID {
-		return nil, fmt.Errorf("UID missmatch")
+
+	isOwner, err := IsOrganizationOwner(opts.UserID, app.UID)
+
+	if (app.UID != opts.UserID) && !isOwner {
+		return nil, fmt.Errorf("UID mismatch")
 	}
 
 	app.Name = opts.Name
@@ -233,6 +236,7 @@ func deleteOAuth2Application(sess *xorm.Session, id, userid int64) error {
 	if deleted, err := sess.Delete(&OAuth2Application{ID: id, UID: userid}); err != nil {
 		return err
 	} else if deleted == 0 {
+
 		return fmt.Errorf("cannot find oauth2 application")
 	}
 	codes := make([]*OAuth2AuthorizationCode, 0)
@@ -256,7 +260,7 @@ func deleteOAuth2Application(sess *xorm.Session, id, userid int64) error {
 	return nil
 }
 
-// DeleteOAuth2Application deletes the application with the given id and the grants and auth codes related to it. It checks if the userid was the creator of the app.
+// DeleteOAuth2Application deletes the application with the given id and the grants and auth codes related to it. It checks if the is an owner of the app or .
 func DeleteOAuth2Application(id, userid int64) error {
 	sess := x.NewSession()
 	if err := sess.Begin(); err != nil {

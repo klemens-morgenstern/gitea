@@ -30,11 +30,17 @@ func OAuthApplicationsPost(ctx *context.Context, form auth.EditOAuth2Application
 		ctx.HTML(200, tplSettingsApplications)
 		return
 	}
+
+	if isOwner, err := models.IsOrganizationOwner(ctx.User.ID, form.UID); !isOwner || (err != nil) {
+		ctx.ServerError("UpdateOAuth2Application", err)
+		return
+	}
+
 	// TODO validate redirect URI
 	app, err := models.CreateOAuth2Application(models.CreateOAuth2ApplicationOptions{
 		Name:         form.Name,
 		RedirectURIs: []string{form.RedirectURI},
-		UserID:       ctx.User.ID,
+		UserID:       form.UID,
 	})
 	if err != nil {
 		ctx.ServerError("CreateOAuth2Application", err)
@@ -61,17 +67,28 @@ func OAuthApplicationsEdit(ctx *context.Context, form auth.EditOAuth2Application
 		ctx.HTML(200, tplSettingsApplications)
 		return
 	}
+	if isOwner, err := models.IsOrganizationOwner(ctx.User.ID, form.UID); !isOwner || (err != nil) {
+		ctx.ServerError("UpdateOAuth2Application", err)
+		return
+	}
+
 	// TODO validate redirect URI
 	var err error
 	if ctx.Data["App"], err = models.UpdateOAuth2Application(models.UpdateOAuth2ApplicationOptions{
 		ID:           ctx.ParamsInt64("id"),
 		Name:         form.Name,
 		RedirectURIs: []string{form.RedirectURI},
-		UserID:       ctx.User.ID,
+		UserID:       form.UID,
 	}); err != nil {
 		ctx.ServerError("UpdateOAuth2Application", err)
 		return
 	}
+
+	if ctx.Data["Orgs"], err = models.GetOwnedOrgsByUserID(ctx.User.ID); err != nil {
+		ctx.ServerError("GetOrgsCanCreateRepoByUserID", err)
+		return
+	}
+
 	ctx.Flash.Success(ctx.Tr("settings.update_oauth2_application_success"))
 	ctx.HTML(200, tplSettingsOAuthApplications)
 }
@@ -100,6 +117,12 @@ func OAuthApplicationsRegenerateSecret(ctx *context.Context) {
 		ctx.ServerError("GenerateClientSecret", err)
 		return
 	}
+
+	if ctx.Data["Orgs"], err = models.GetOrgsCanCreateRepoByUserID(ctx.User.ID); err != nil {
+		ctx.ServerError("GetOrgsCanCreateRepoByUserID", err)
+		return
+	}
+
 	ctx.Flash.Success(ctx.Tr("settings.update_oauth2_application_success"))
 	ctx.HTML(200, tplSettingsOAuthApplications)
 }
@@ -120,6 +143,10 @@ func OAuth2ApplicationShow(ctx *context.Context) {
 		return
 	}
 	ctx.Data["App"] = app
+	if ctx.Data["Orgs"], err = models.GetOwnedOrgsByUserID(ctx.User.ID); err != nil {
+		ctx.ServerError("GetOrgsCanCreateRepoByUserID", err)
+		return
+	}
 	ctx.HTML(200, tplSettingsOAuthApplications)
 }
 

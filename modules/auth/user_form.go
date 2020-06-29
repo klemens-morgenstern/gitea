@@ -301,7 +301,7 @@ func (f *AddKeyForm) Validate(ctx *macaron.Context, errs binding.Errors) binding
 
 // NewAccessTokenForm form for creating access token
 type NewAccessTokenForm struct {
-	Name string `binding:"Required;MaxSize(255)"`
+	Name  string `binding:"Required;MaxSize(255)"`
 }
 
 // Validate valideates the fields
@@ -311,7 +311,8 @@ func (f *NewAccessTokenForm) Validate(ctx *macaron.Context, errs binding.Errors)
 
 // EditOAuth2ApplicationForm form for editing oauth2 applications
 type EditOAuth2ApplicationForm struct {
-	Name        string `binding:"Required;MaxSize(255)" form:"application_name"`
+	Name  string `binding:"Required;MaxSize(255)" form:"application_name"`
+	UID   int64  `binding:"Required"`
 	RedirectURI string `binding:"Required" form:"redirect_uri"`
 }
 

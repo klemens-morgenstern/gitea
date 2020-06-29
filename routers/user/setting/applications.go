@@ -87,6 +87,7 @@ func loadApplicationsData(ctx *context.Context) {
 	}
 	ctx.Data["Tokens"] = tokens
 	ctx.Data["EnableOAuth2"] = setting.OAuth2.Enable
+
 	if setting.OAuth2.Enable {
 		ctx.Data["Applications"], err = models.GetOAuth2ApplicationsByUserID(ctx.User.ID)
 		if err != nil {
@@ -98,5 +99,11 @@ func loadApplicationsData(ctx *context.Context) {
 			ctx.ServerError("GetOAuth2GrantsByUserID", err)
 			return
 		}
+		ctx.Data["Orgs"], err = models.GetOwnedOrgsByUserID(ctx.User.ID)
+		if err != nil {
+			ctx.ServerError("GetOrgsCanCreateRepoByUserID", err)
+			return
+		}
+
 	}
 }
